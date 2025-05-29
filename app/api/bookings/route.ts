@@ -1,17 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getBookings, addBooking, isSeatTaken } from "@/lib/shared-data"
+import { getBookings, addBooking, isSeatTaken } from "@/lib/mongodb-helpers"
 
 // GET /api/bookings - Get all bookings
 export async function GET() {
   try {
-    console.log("Fetching all bookings...")
-    const bookings = getBookings()
+    console.log("Fetching all bookings from MongoDB...")
+    const bookings = await getBookings()
     console.log("Found bookings:", bookings.length)
 
-    // Sort by creation date (newest first)
-    const sortedBookings = bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    return NextResponse.json(sortedBookings, {
+    return NextResponse.json(bookings, {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -38,12 +35,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if seat is already taken on the same bus
-    if (isSeatTaken(busnumber, seatnumber)) {
+    if (await isSeatTaken(busnumber, seatnumber)) {
       return NextResponse.json({ error: `Seat ${seatnumber} is already taken on bus ${busnumber}` }, { status: 409 })
     }
 
     // Create new booking
-    const newBooking = addBooking({
+    const newBooking = await addBooking({
       passengername: passengername.trim(),
       busnumber: busnumber.trim(),
       seatnumber: seatnumber.trim(),

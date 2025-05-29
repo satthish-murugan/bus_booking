@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getBookingById, updateBooking, isSeatTaken } from "@/lib/shared-data"
+import { getBookingById, updateBooking, isSeatTaken } from "@/lib/mongodb-helpers"
+import mongoose from "mongoose"
 
 // PUT /api/bookings/updatePassenger/[id] - Update booking by ID
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -16,19 +17,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
+    // Validate MongoDB ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid booking ID format" }, { status: 400 })
+    }
+
     // Check if booking exists
-    const existingBooking = getBookingById(id)
+    const existingBooking = await getBookingById(id)
     if (!existingBooking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 })
     }
 
     // Check if the new seat is already taken on the same bus (excluding current booking)
-    if (isSeatTaken(busnumber, seatnumber, id)) {
+    if (await isSeatTaken(busnumber, seatnumber, id)) {
       return NextResponse.json({ error: `Seat ${seatnumber} is already taken on bus ${busnumber}` }, { status: 409 })
     }
 
     // Update booking
-    const updatedBooking = updateBooking(id, {
+    const updatedBooking = await updateBooking(id, {
       passengername: passengername.trim(),
       busnumber: busnumber.trim(),
       seatnumber: seatnumber.trim(),

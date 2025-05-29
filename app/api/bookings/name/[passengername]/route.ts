@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getBookingByName } from "@/lib/shared-data"
+import { getBookingByName } from "@/lib/mongodb-helpers"
 
 // GET /api/bookings/name/[passengername] - Search booking by passenger name
 export async function GET(request: NextRequest, { params }: { params: { passengername: string } }) {
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest, { params }: { params: { passenge
     const decodedName = decodeURIComponent(passengername)
 
     // Find booking by passenger name (case-insensitive)
-    const booking = getBookingByName(decodedName)
+    const booking = await getBookingByName(decodedName)
 
     if (!booking) {
       return NextResponse.json({ error: "No booking found for this passenger name" }, { status: 404 })
